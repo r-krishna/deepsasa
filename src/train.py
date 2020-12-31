@@ -34,8 +34,6 @@ def _train_epoch(train_loader, model, optimizer, criterion):
 		inputs, labels = data
 		optimizer.zero_grad()
 		outputs = model(inputs)
-		print(outputs.shape)
-		print(labels.shape)
 		loss = criterion(outputs, labels.long())
 		running_loss += loss.item()
 		loss.backward()
