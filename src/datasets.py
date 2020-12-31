@@ -50,7 +50,7 @@ class AbSASADataset(Dataset):
 		create a featurized matrix with dimensions Lxnum_bins from the dictionary of sasa values for each residue
 		"""
 		sequence_lengths = [len(sasa[chain].keys()) for chain in sasa.keys()]
-		sasa_matrix = np.zeros((np.sum(sequence_lengths), self.num_bins))
+		sasa_matrix = np.zeros(np.sum(sequence_lengths))
 
 		for chain in sasa.keys():
 			for i, residue in enumerate(sasa[chain].keys()):
@@ -58,15 +58,15 @@ class AbSASADataset(Dataset):
 				for idx in range(len(self.bins)-1):
 					if sasa[chain][residue] >= self.bins[idx] and sasa[chain][residue] < self.bins[idx+1]:
 						if chain == "H":
-							sasa_matrix[i][idx] = 1
+							sasa_matrix[i] = idx
 						elif chain == "L":
-							sasa_matrix[i+sequence_lengths[0]][idx] = 1
+							sasa_matrix[i+sequence_lengths[0]] = idx
 		return sasa_matrix
 
 	@classmethod
 	def collate_fn(cls, batch):
 		""" pad tensors in the same batch and convert them into float tensors """
-		return cls.pad_data([item['sequence'] for item in batch]), cls.pad_data([item['sasa'] for item in batch], pad_value=-1) 
+		return cls.pad_data([item['sequence'] for item in batch]).transpose(1,2), cls.pad_data([item['sasa'] for item in batch], pad_value=-1) 
 
 	@staticmethod
 	def pad_data(batch, pad_value=0):
@@ -77,10 +77,10 @@ class AbSASADataset(Dataset):
 		for item in batch:
 			# subtract the padded shape from the tensor shape
 			to_pad = tuple(map(lambda i, j: i - j, padded_shape, item.shape))
-			padded_item = np.pad(item, [(0, to_pad[0]), (0, to_pad[1])], mode="constant", constant_values=pad_value)
+			padded_item = np.pad(item, [(0, to_pad[i]) for i in range(len(to_pad))], mode="constant", constant_values=pad_value)
 			padded_tensor = torch.as_tensor(padded_item, dtype=torch.float)
 			padded_tensors.append(padded_tensor)
-		return torch.stack(padded_tensors).transpose(1, 2)
+		return torch.stack(padded_tensors)
 
 
 
