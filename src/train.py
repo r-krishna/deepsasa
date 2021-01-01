@@ -9,20 +9,22 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 
 
-def train(path, train_loader, validation_loader, model, device, epochs, optimizer, criterion, lr_modifier):
+def train(path, log_path, train_loader, validation_loader, model, device, epochs, optimizer, criterion, lr_modifier):
 	""" trains the model and saves it in the models directory """
 	model = model.to(device)
 	for epoch in range(epochs):
 		train_loss = _train_epoch(train_loader, model, optimizer, criterion)
 		lr_modifier.step(train_loss)
 		avg_training_loss = train_loss/(len(train_loader))
-		print('\nAverage training loss (epoch {}): {}'.format(
-            epoch, avg_training_loss))
+		msg= '\nAverage training loss (epoch {}): {}'.format(
+            epoch, avg_training_loss)
+		_log(msg, log_path)
 
 		validation_loss = _validate(validation_loader, model, criterion)
 		avg_validation_loss = validation_loss/(len(validation_loader))
-		print('\nAverage validation loss (epoch {}): {}'.format(
-            epoch, avg_validation_loss))
+		msg = '\nAverage validation loss (epoch {}): {}'.format(
+            epoch, avg_validation_loss)
+		_log(msg, log_path)
 
 	torch.save(model.state_dict(), path)
 	print('Finished Training')
@@ -56,6 +58,12 @@ def _validate(validation_loader, model, criterion):
 			loss = criterion(outputs, labels.long())
 			running_loss += loss.item()
 	return running_loss
+
+def _log(msg, log_path):
+	"""writes metadata to log file"""
+	f = open(log_path, "a")
+	f.write(msg)
+	f.close()
 
 def _get_args():
 	description = "Script for training a model to predict relative SASA of individual residues in Fabs. The model is trained with a series of 1D convolutions on all antibody structures with a 99 percent similarity cutoff from the SAbDab and using SASA calculations from freesasa."
