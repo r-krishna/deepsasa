@@ -81,10 +81,3 @@ class AbSASADataset(Dataset):
 			padded_tensor = torch.as_tensor(padded_item, dtype=torch.float)
 			padded_tensors.append(padded_tensor)
 		return torch.stack(padded_tensors)
-
-
-
-
-
-
-
