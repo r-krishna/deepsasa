@@ -318,8 +318,7 @@ def _cli():
         '''
         Downloads chothia files from SAbDab
         ''')
-    parser = argparse.ArgumentParser(description=desc,
-                                     formatter_class=RawTextArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('--seqid', type=int, default=99,
                         help='Max sequence identity (%)')
     parser.add_argument('--paired', type=bool, default=True,

@@ -1,3 +1,6 @@
+import argparse
+from datetime import date
+import time
 from datasets import AbSASADataset
 from models import NaiveResNetBlock, NaiveResNet1D
 import torch
@@ -5,9 +8,6 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 
-# HYPERPARAMETERS
-train_val_split = .95
-learning_rate = 0.01
 
 def train(path, train_loader, validation_loader, model, epochs, optimizer, criterion, lr_modifier):
 	""" trains the model and saves it in the models directory """
@@ -52,21 +52,48 @@ def _validate(validation_loader, model, criterion):
 			running_loss += loss.item()
 	return running_loss
 
-# 21 channels for 20 residues and the chain delimiter 
-model = NaiveResNet1D(21, NaiveResNetBlock, 3, 26)
-device_type = 'cuda' if torch.cuda.is_available() else 'cpu'
-device = torch.device(device_type)
+def _get_args():
+	description = "Script for training a model to predict relative SASA of individual residues in Fabs. The model is trained with a series of 1D convolutions on all antibody structures with a 99 percent similarity cutoff from the SAbDab and using SASA calculations from freesasa."
+	parser = argparse.ArgumentParser(description=description)
+	
+	# Network Architecture
+	parser.add_argument("--num_blocks", type=int, default=25, help="number of 1D resnet blocks to use")
+	parser.add_argument("--num_bins", type=int, default=26, help="number of bins to classify SASAs into")
+	parser.add_argument("--dropout", type=float, default=0.2, help="the probability of entire channels being zerod out")
 
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-criterion = nn.CrossEntropyLoss(ignore_index=-1)
+	# Training Hyperparameters
+	parser.add_argument("--epochs", type=int, default=30, help="number of epochs to train")
+	parser.add_argument("--batch_size", type=int, default=4, help="number of proteins per batch")
+	parser.add_argument("--lr", type=float, default=0.01, help="learning rate for Adam")
+	parser.add_argument("--train_val_split", type=float, default=0.95, help="percentage of dataset used for training")
+	output_path = "models/{}_net.pth".format(date.today().strftime("%Y%m%d"))
+	parser.add_argument("--output_path", type=str, default=output_path)	
+	return parser.parse_args()
 
-dataset = AbSASADataset("data/training_data.npz")
-train_split = int(len(dataset) * train_val_split)
-train_dataset, validation_dataset = random_split(dataset, [train_split, len(dataset)-train_split])
+def main():
+	args = _get_args()
+	start = time.time()
+	# 21 channels for 20 residues and the chain delimiter 
+	model = NaiveResNet1D(21, NaiveResNetBlock, args.num_blocks, args.num_bins)
+	device_type = 'cuda' if torch.cuda.is_available() else 'cpu'
+	device = torch.device(device_type)
 
-train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True, num_workers=0, collate_fn=AbSASADataset.collate_fn)
-validation_loader = DataLoader(validation_dataset, batch_size=4, shuffle=True, num_workers=0, collate_fn=AbSASADataset.collate_fn)
+	optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
+	# padded values are -1 in labels so do not calculate loss 
+	criterion = nn.CrossEntropyLoss(ignore_index=-1)
 
-lr_modifier = optim.lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True)
+	dataset = AbSASADataset("data/training_data.npz")
+	train_split = int(len(dataset) * args.train_val_split)
+	train_dataset, validation_dataset = random_split(dataset, [train_split, len(dataset)-train_split])
 
-train("models/20201230_net.pth", train_loader, validation_loader, model, 30, optimizer, criterion, lr_modifier)
+	train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=0, collate_fn=AbSASADataset.collate_fn)
+	validation_loader = DataLoader(validation_dataset, batch_size=args.batch_size, shuffle=True, num_workers=0, collate_fn=AbSASADataset.collate_fn)
+
+	lr_modifier = optim.lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True)
+
+	train(args.output_path, train_loader, validation_loader, model, args.epochs, optimizer, criterion, lr_modifier)
+	end = time.time()
+	print(end-start)
+	
+if __name__ == '__main__':
+    main()

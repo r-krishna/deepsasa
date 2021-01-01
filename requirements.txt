@@ -1,0 +1,7 @@
+numpy
+biopython
+freesasa
+pytorch
+pandas
+tqdm
+beautifulsoup4

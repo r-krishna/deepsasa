@@ -23,7 +23,7 @@ class NaiveResNetBlock(nn.Module):
 
 class NaiveResNet1D(nn.Module):
 
-	def __init__(self, in_channels, block, num_layers, num_output_bins, init_planes=32, kernel_size=3, stride=1):
+	def __init__(self, in_channels, block, num_layers, num_output_bins, init_planes=32, kernel_size=3, stride=1, dropout=0.2):
 		super(NaiveResNet1D, self).__init__()
 
 		self.planes = init_planes
@@ -35,6 +35,7 @@ class NaiveResNet1D(nn.Module):
 		for i in range(num_layers):
 			self.layers.append(block(self.planes, int(self.planes * math.pow(2, i))))
 			self.planes = int(self.planes * math.pow(2, i))
+		self.dropout = nn.Dropout(p=dropout)
 		self.conv2 = nn.Conv1d(self.planes, num_output_bins, kernel_size, stride=stride, bias=False, padding=kernel_size // 2)
 		self.bn2 = nn.BatchNorm1d(num_output_bins)
 
