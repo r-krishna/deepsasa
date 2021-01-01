@@ -13,14 +13,14 @@ def train(path, log_path, train_loader, validation_loader, model, device, epochs
 	""" trains the model and saves it in the models directory """
 	model = model.to(device)
 	for epoch in range(epochs):
-		train_loss = _train_epoch(train_loader, model, optimizer, criterion)
+		train_loss = _train_epoch(train_loader, model, devcie, optimizer, criterion)
 		lr_modifier.step(train_loss)
 		avg_training_loss = train_loss/(len(train_loader))
 		msg= '\nAverage training loss (epoch {}): {}'.format(
             epoch, avg_training_loss)
 		_log(msg, log_path)
 
-		validation_loss = _validate(validation_loader, model, criterion)
+		validation_loss = _validate(validation_loader, model, device, criterion)
 		avg_validation_loss = validation_loss/(len(validation_loader))
 		msg = '\nAverage validation loss (epoch {}): {}'.format(
             epoch, avg_validation_loss)
@@ -29,7 +29,7 @@ def train(path, log_path, train_loader, validation_loader, model, device, epochs
 	torch.save(model.state_dict(), path)
 	_log("finished training", log_path)
 
-def _train_epoch(train_loader, model, optimizer, criterion):
+def _train_epoch(train_loader, model, device, optimizer, criterion):
 	""" trains the model for one epoch"""
 	model.train()
 	running_loss = 0.0
@@ -45,7 +45,7 @@ def _train_epoch(train_loader, model, optimizer, criterion):
 		optimizer.step()
 	return running_loss
 
-def _validate(validation_loader, model, criterion):
+def _validate(validation_loader, model, device, criterion):
 	""" validates model every epoch """
 	with torch.no_grad():
 		model.eval()
@@ -77,7 +77,7 @@ def _get_args():
 	# Training Hyperparameters
 	parser.add_argument("--epochs", type=int, default=30, help="number of epochs to train")
 	parser.add_argument("--batch_size", type=int, default=4, help="number of proteins per batch")
-	parser.add_argument("--lr", type=float, default=0.01, help="learning rate for Adam")
+	parser.add_argument("--learning_rate", type=float, default=0.01, help="learning rate for Adam")
 	parser.add_argument("--train_val_split", type=float, default=0.95, help="percentage of dataset used for training")
 	train_date = date.today().strftime("%Y%m%d")
 	log_path = "models/{}_log.txt".format(train_date)
@@ -107,7 +107,7 @@ def main():
 
 	lr_modifier = optim.lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True)
 
-	train(args.output_path, args.log_path, train_loader, validation_loader, model, args.epochs, optimizer, criterion, lr_modifier)
+	train(args.output_path, args.log_path, train_loader, validation_loader, model, device, args.epochs, optimizer, criterion, lr_modifier)
 	end = time.time()
 	_log(str(end-start), args.log_path)
 	
