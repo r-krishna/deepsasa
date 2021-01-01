@@ -1,5 +1,6 @@
 import argparse
 from datetime import date
+import time
 from datasets import AbSASADataset
 from models import NaiveResNetBlock, NaiveResNet1D
 import torch
@@ -7,9 +8,6 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 
-# HYPERPARAMETERS
-train_val_split = .95
-learning_rate = 0.01
 
 def train(path, train_loader, validation_loader, model, epochs, optimizer, criterion, lr_modifier):
 	""" trains the model and saves it in the models directory """
@@ -74,6 +72,7 @@ def _get_args():
 
 def main():
 	args = _get_args()
+	start = time.time()
 	# 21 channels for 20 residues and the chain delimiter 
 	model = NaiveResNet1D(21, NaiveResNetBlock, args.num_blocks, args.num_bins)
 	device_type = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -93,6 +92,8 @@ def main():
 	lr_modifier = optim.lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True)
 
 	train(args.output_path, train_loader, validation_loader, model, args.epochs, optimizer, criterion, lr_modifier)
-
+	end = time.time()
+	print(end-start)
+	
 if __name__ == '__main__':
     main()
