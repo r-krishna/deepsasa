@@ -9,8 +9,9 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 
 
-def train(path, train_loader, validation_loader, model, epochs, optimizer, criterion, lr_modifier):
+def train(path, train_loader, validation_loader, model, device, epochs, optimizer, criterion, lr_modifier):
 	""" trains the model and saves it in the models directory """
+	model = model.to(device)
 	for epoch in range(epochs):
 		train_loss = _train_epoch(train_loader, model, optimizer, criterion)
 		lr_modifier.step(train_loss)
@@ -32,6 +33,8 @@ def _train_epoch(train_loader, model, optimizer, criterion):
 	running_loss = 0.0
 	for i, data in enumerate(train_loader):
 		inputs, labels = data
+		inputs = inputs.to(device)
+		labels = labels.to(device)
 		optimizer.zero_grad()
 		outputs = model(inputs)
 		loss = criterion(outputs, labels.long())
@@ -47,6 +50,8 @@ def _validate(validation_loader, model, criterion):
 		running_loss = 0.0
 		for i, data in enumerate(validation_loader):
 			inputs, labels = data
+			inputs = inputs.to(device)
+			labels = labels.to(device)
 			outputs = model(inputs)
 			loss = criterion(outputs, labels.long())
 			running_loss += loss.item()
@@ -94,6 +99,6 @@ def main():
 	train(args.output_path, train_loader, validation_loader, model, args.epochs, optimizer, criterion, lr_modifier)
 	end = time.time()
 	print(end-start)
-	
+
 if __name__ == '__main__':
     main()
