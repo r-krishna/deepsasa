@@ -22,7 +22,6 @@ import sys
 import requests
 import pandas as pd
 import argparse
-from deeph3.util import RawTextArgumentDefaultsHelpFormatter
 from pathlib import Path
 from bs4 import BeautifulSoup
 from tqdm import tqdm
@@ -329,11 +328,14 @@ def _cli():
                         help='R-Factor cutoff')
     parser.add_argument('--nr_res', type=int, default=3,
                         help='Resolution cutoff')
+    parser.add_argument('--test', action='store_true')
     args = parser.parse_args()
 
-    download_train_dataset(seqid=args.seqid, paired=args.paired, nr_complex=args.nr_complex,
+    if not args.test:
+        download_train_dataset(seqid=args.seqid, paired=args.paired, nr_complex=args.nr_complex,
                            nr_rfactor=args.nr_rfactor, nr_res=args.nr_res)
-
+    else:
+        download_test_dataset()
 
 if __name__ == '__main__':
     _cli()

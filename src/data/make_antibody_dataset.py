@@ -32,7 +32,7 @@ def make_dataset(pdb_dir, out_file):
 				residue_areas = result.residueAreas()
 				for chain_key in residue_areas.keys():
 					for residue_key in residue_areas[chain_key]:
-						residue_areas[chain_key][residue_key] = residue_areas[chain_key][residue_key].relativeTotal
+						residue_areas[chain_key][residue_key] = residue_areas[chain_key][residue_key].total
 
 				data = {"sequence": sequence, "sasa":residue_areas}
 				to_save = {name: data}
@@ -44,23 +44,7 @@ def load_dataset(out_file):
 	"""
 	data = np.load(out_file, allow_pickle=True)
 	return data
+pdb_dir = "test_set/"
+out_file = "total_area_data/test_data.npz"
+make_dataset(pdb_dir, out_file)
 
-def one_hot_encode(sequence, alphabet=constants.amino_acids):
-	"""One hot encode the sequence"""
-	sequence_lengths = [len(sequence[chain]) for chain in sequence.keys()]
-	encoding = np.zeros((np.sum(sequence_lengths), len(alphabet)+1), dtype=int)
-	for chain in sequence.keys():
-		for i, res in enumerate(sequence[chain]):
-			idx = alphabet.index(res)
-			if chain == "H":
-				encoding[i][idx] = 1
-			elif chain == "L":
-				encoding[i+sequence_lengths[0]][idx] = 1
-		if chain == "H":
-			encoding[sequence_lengths[0]][len(alphabet)] = 1
-	return encoding
-
-	
-
-
-# make_dataset("/Users/rohith/Documents/Denali/deepH3-distances-orientations/deeph3/data/antibody_database/", "training_data.npz")
