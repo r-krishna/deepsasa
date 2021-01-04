@@ -13,7 +13,7 @@ def train(path, log_path, train_loader, validation_loader, model, device, epochs
 	""" trains the model and saves it in the models directory """
 	model = model.to(device)
 	for epoch in range(epochs):
-		train_loss = _train_epoch(train_loader, model, devcie, optimizer, criterion)
+		train_loss = _train_epoch(train_loader, model, device, optimizer, criterion)
 		lr_modifier.step(train_loss)
 		avg_training_loss = train_loss/(len(train_loader))
 		msg= '\nAverage training loss (epoch {}): {}'.format(
@@ -98,7 +98,7 @@ def main():
 	# padded values are -1 in labels so do not calculate loss 
 	criterion = nn.CrossEntropyLoss(ignore_index=-1)
 
-	dataset = AbSASADataset("data/training_data.npz")
+	dataset = AbSASADataset("data/total_area_data/training_data.npz", num_bins=args.num_bins)
 	train_split = int(len(dataset) * args.train_val_split)
 	train_dataset, validation_dataset = random_split(dataset, [train_split, len(dataset)-train_split])
 

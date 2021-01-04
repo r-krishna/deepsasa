@@ -35,6 +35,7 @@ class NaiveResNet1D(nn.Module):
 		for i in range(num_layers):
 			self.layers.append(block(self.planes, int(self.planes * math.pow(2, i))))
 			self.planes = int(self.planes * math.pow(2, i))
+
 		self.dropout = nn.Dropout(p=dropout)
 		self.conv2 = nn.Conv1d(self.planes, num_output_bins, kernel_size, stride=stride, bias=False, padding=kernel_size // 2)
 		self.bn2 = nn.BatchNorm1d(num_output_bins)
@@ -43,6 +44,7 @@ class NaiveResNet1D(nn.Module):
 		out = self.activation(self.bn1(self.conv1(x)))
 		for layer in self.layers:
 			out = layer(out)
+		out = self.dropout(out)
 		out = self.activation(self.bn2(self.conv2(out)))
 		return out
 
