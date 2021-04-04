@@ -32,7 +32,7 @@ def make_dataset(pdb_dir, out_file):
 				residue_areas = result.residueAreas()
 				for chain_key in residue_areas.keys():
 					for residue_key in residue_areas[chain_key]:
-						residue_areas[chain_key][residue_key] = residue_areas[chain_key][residue_key].total
+						residue_areas[chain_key][residue_key] = residue_areas[chain_key][residue_key].relativeTotal if residue_areas[chain_key][residue_key].relativeTotal < 1 else 1
 
 				data = {"sequence": sequence, "sasa":residue_areas}
 				to_save = {name: data}
@@ -45,6 +45,6 @@ def load_dataset(out_file):
 	data = np.load(out_file, allow_pickle=True)
 	return data
 pdb_dir = "test_set/"
-out_file = "total_area_data/test_data.npz"
+out_file = "relative_area_data/test_data_normalize.npz"
 make_dataset(pdb_dir, out_file)
 

@@ -1,7 +1,7 @@
 numpy
 biopython
 freesasa
-pytorch
+torch
 pandas
 tqdm
 beautifulsoup4
