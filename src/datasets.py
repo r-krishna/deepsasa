@@ -47,7 +47,7 @@ class AbSASADataset(Dataset):
 
 	def flatten_sasa(self, sasa):
 		"""
-		create a featurized matrix with dimensions Lxnum_bins from the dictionary of sasa values for each residue
+		create a featurized matrix with dimensions Lx1 from the dictionary of sasa values for each residue
 		"""
 		sequence_lengths = [len(sasa[chain].keys()) for chain in sasa.keys()]
 		sasa_matrix = np.zeros(np.sum(sequence_lengths))

@@ -2,7 +2,7 @@ import argparse
 from datetime import date
 import time
 from datasets import AbSASADataset
-from models import NaiveResNetBlock, NaiveResNet1D
+from models import DeepSASAResNet
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -90,7 +90,7 @@ def main():
 	args = _get_args()
 	start = time.time()
 	# 21 channels for 20 residues and the chain delimiter 
-	model = NaiveResNet1D(21, NaiveResNetBlock, args.num_blocks, args.num_bins)
+	model = DeepSASAResNet(21)
 	device_type = 'cuda' if torch.cuda.is_available() else 'cpu'
 	device = torch.device(device_type)
 
@@ -98,7 +98,7 @@ def main():
 	# padded values are -1 in labels so do not calculate loss 
 	criterion = nn.CrossEntropyLoss(ignore_index=-1)
 
-	dataset = AbSASADataset("data/total_area_data/training_data.npz", num_bins=args.num_bins)
+	dataset = AbSASADataset("data/relative_area_data/training_data.npz", num_bins=args.num_bins)
 	train_split = int(len(dataset) * args.train_val_split)
 	train_dataset, validation_dataset = random_split(dataset, [train_split, len(dataset)-train_split])
 
