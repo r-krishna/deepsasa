@@ -98,7 +98,7 @@ def main():
 	# padded values are -1 in labels so do not calculate loss 
 	criterion = nn.CrossEntropyLoss(ignore_index=-1)
 
-	dataset = AbSASADataset("data/relative_area_data/training_data.npz", num_bins=args.num_bins)
+	dataset = AbSASADataset("data/relative_area_data/training_data_normalize.npz", num_bins=args.num_bins)
 	train_split = int(len(dataset) * args.train_val_split)
 	train_dataset, validation_dataset = random_split(dataset, [train_split, len(dataset)-train_split])
 

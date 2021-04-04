@@ -12,7 +12,7 @@ class AbSASADataset(Dataset):
 		self.out_file = out_file
 		self.files = data.files
 		# Calculated the minimum and maximum in the train dataset
-		bins = np.linspace(0, 200, num_bins-1)
+		bins = np.linspace(0, 1, num_bins-1)
 		self.num_bins = num_bins
 		self.bins = np.append(bins, np.inf)
 
