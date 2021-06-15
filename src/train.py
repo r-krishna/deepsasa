@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader, random_split
 def train(path, log_path, train_loader, validation_loader, model, device, epochs, optimizer, criterion, lr_modifier):
 	""" trains the model and saves it in the models directory """
 	model = model.to(device)
+	model_checkpoints = {}
 	for epoch in range(epochs):
 		train_loss = _train_epoch(train_loader, model, device, optimizer, criterion)
 		lr_modifier.step(train_loss)
@@ -19,14 +20,17 @@ def train(path, log_path, train_loader, validation_loader, model, device, epochs
 		msg= '\nAverage training loss (epoch {}): {}'.format(
             epoch, avg_training_loss)
 		_log(msg, log_path)
+		print(msg)
 
 		validation_loss = _validate(validation_loader, model, device, criterion)
 		avg_validation_loss = validation_loss/(len(validation_loader))
 		msg = '\nAverage validation loss (epoch {}): {}'.format(
             epoch, avg_validation_loss)
 		_log(msg, log_path)
+		print(msg)
+		model_checkpoints.update({str(epoch): model.state_dict()})
 
-	torch.save(model.state_dict(), path)
+	torch.save(model_checkpoints, path)
 	_log("finished training", log_path)
 
 def _train_epoch(train_loader, model, device, optimizer, criterion):
@@ -34,7 +38,7 @@ def _train_epoch(train_loader, model, device, optimizer, criterion):
 	model.train()
 	running_loss = 0.0
 	for i, data in enumerate(train_loader):
-		inputs, labels = data
+		names, inputs, labels = data
 		inputs = inputs.to(device)
 		labels = labels.to(device)
 		optimizer.zero_grad()
@@ -51,7 +55,7 @@ def _validate(validation_loader, model, device, criterion):
 		model.eval()
 		running_loss = 0.0
 		for i, data in enumerate(validation_loader):
-			inputs, labels = data
+			names, inputs, labels = data
 			inputs = inputs.to(device)
 			labels = labels.to(device)
 			outputs = model(inputs)
@@ -75,20 +79,24 @@ def _get_args():
 	parser.add_argument("--dropout", type=float, default=0.2, help="the probability of entire channels being zerod out")
 
 	# Training Hyperparameters
+	parser.add_argument("--data", type=str, help="NPZ file that contains the data for training")
 	parser.add_argument("--epochs", type=int, default=30, help="number of epochs to train")
 	parser.add_argument("--batch_size", type=int, default=4, help="number of proteins per batch")
 	parser.add_argument("--learning_rate", type=float, default=0.01, help="learning rate for Adam")
 	parser.add_argument("--train_val_split", type=float, default=0.95, help="percentage of dataset used for training")
+	
+	# Logging parameters
 	train_date = date.today().strftime("%Y%m%d")
 	log_path = "models/{}_log.txt".format(train_date)
-	parser.add_argument("--log_path", type=str, default=log_path)
+	parser.add_argument("--log_path", type=str, default=log_path, help="path where the log file is stored")
 	output_path = "models/{}_net.pth".format(train_date)
-	parser.add_argument("--output_path", type=str, default=output_path)	
+	parser.add_argument("--output_path", type=str, default=output_path, help="path where the model state dictionary is stored")	
 	return parser.parse_args()
 
 def main():
 	args = _get_args()
 	start = time.time()
+
 	# 21 channels for 20 residues and the chain delimiter 
 	model = DeepSASAResNet(21)
 	device_type = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -98,7 +106,7 @@ def main():
 	# padded values are -1 in labels so do not calculate loss 
 	criterion = nn.CrossEntropyLoss(ignore_index=-1)
 
-	dataset = AbSASADataset("data/relative_area_data/training_data_normalize.npz", num_bins=args.num_bins)
+	dataset = AbSASADataset(args.data, num_bins=args.num_bins)
 	train_split = int(len(dataset) * args.train_val_split)
 	train_dataset, validation_dataset = random_split(dataset, [train_split, len(dataset)-train_split])
 

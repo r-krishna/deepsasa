@@ -26,7 +26,7 @@ class AbSASADataset(Dataset):
 		sasa = data[self.files[idx]].item()['sasa']
 		sequence_encoded = self.one_hot_encode(sequence)
 		sasa_encoded = self.flatten_sasa(sasa)
-		sample = {"sequence":sequence_encoded, "sasa":sasa_encoded}
+		sample = {"name":self.files[idx], "sequence":sequence_encoded, "sasa":sasa_encoded}
 		return sample
 
 	@staticmethod
@@ -66,7 +66,7 @@ class AbSASADataset(Dataset):
 	@classmethod
 	def collate_fn(cls, batch):
 		""" pad tensors in the same batch and convert them into float tensors """
-		return cls.pad_data([item['sequence'] for item in batch]).transpose(1,2), cls.pad_data([item['sasa'] for item in batch], pad_value=-1) 
+		return [item["name"] for item in batch], cls.pad_data([item['sequence'] for item in batch]).transpose(1,2), cls.pad_data([item['sasa'] for item in batch], pad_value=-1) 
 
 	@staticmethod
 	def pad_data(batch, pad_value=0):

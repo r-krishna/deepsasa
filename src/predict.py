@@ -1,50 +1,68 @@
+import argparse
 import numpy as np
+import pandas as pd
 import torch
+from sklearn.metrics import classification_report, confusion_matrix
 from torch.utils.data import DataLoader
 
 from datasets import AbSASADataset
-from models import NaiveResNet1D, NaiveResNetBlock
+from models import DeepSASAResNet
 
-test_data = AbSASADataset("data/total_area_data/test_data.npz")
-testloader = DataLoader(test_data, batch_size=4, shuffle=True, collate_fn=AbSASADataset.collate_fn)
 
-model = NaiveResNet1D(21, NaiveResNetBlock, 3, 26)
-model.load_state_dict(torch.load("models/20210103_net.pth"))
-model.eval()
+def evaluate(model, loader, name):
+	"""calculates the classification metrics and the confusion matrix for a dataset"""
+	model.eval()
+	total_predicted = []
+	total_labels = []
+	output_logits = {}
+	with torch.no_grad():
+		for i, data in enumerate(loader):
+			names, inputs, labels = data
+			outputs = model(inputs)
+			output_logits.update({name:outputs[i, :, :] for i, name in enumerate(names)})
+			_, predicted = torch.max(outputs, 1)
+			total_predicted.append(torch.flatten(predicted))
+			total_labels.append(torch.flatten(labels))
+		y_true = torch.cat(total_labels)
+		y_predicted = torch.cat(total_predicted)
+		report = pd.DataFrame(data=classification_report(y_true, y_predicted, output_dict=True))
+		conf_matrix = pd.DataFrame(data=confusion_matrix(y_true, y_predicted)) 
+		report.to_csv("{}_report.csv".format(name))
+		conf_matrix.to_csv("{}_confusion.csv".format(name))
+		torch.save(output_logits, "{}_output_logits.pth".format(name))
 
-correct = 0
-total = 0
-with torch.no_grad():
-	for data in testloader:
-		inputs, labels = data
-		outputs = model(inputs)
-		_, predicted = torch.max(outputs, 1)
 
-		total += labels.shape[0] * labels.shape[1]
-		correct += (predicted == labels).sum().item()
-print('Accuracy of the network on the test set: %d %%' % (
-	100 * correct / total))
+def _get_args():
+	description = "This script tests model predictions on an user provided test set"
+	parser = argparse.ArgumentParser(description=description)
+	parser.add_argument("--model", type=str, help="the state dictionary of the pretrained model that is being evaluated")
+	parser.add_argument("--trainset", type=str, help="NPZ file storing the data for the train set")
+	parser.add_argument("--testset", type=str, help="NPZ file storing the data for the test set")
+	parser.add_argument("--epoch", type=str, help="the epoch number of the model that is being evaluated")
+	parser.add_argument("--jobname", type=str, help="name to use for storing output files")
+	return parser.parse_args()
 
-class_correct = np.zeros(test_data.num_bins)
-class_distance = np.zeros(test_data.num_bins)
-class_total = np.zeros(test_data.num_bins)
-with torch.no_grad():
-	for data in testloader:
-		inputs, labels = data
-		outputs = model(inputs)
-		_, predicted = torch.max(outputs, 1)
-		c = (predicted == labels).squeeze()
-		d = torch.abs(torch.sub(predicted, labels)).squeeze()
-		for i, label in enumerate(labels):
-			for j, l in enumerate(label):
-				class_correct[int(l)] += c[i][j].item()
-				class_distance[int(l)] += d[i][j].item()
-				class_total[int(l)] += 1
-for num in range(26):
-	print(class_total[num])
-	if class_total[num] == 0:
-		print('No examples of %5s in test dataset' % (num))
-	else:
-		print('Accuracy of %5s : %2d %%' % (num, 100 * class_correct[num] / class_total[num]))
-		print('Avg Distance of %5s : %2f' % (num, class_distance[num] / class_total[num]))
+def main():
+	args = _get_args()
+	train_data = AbSASADataset(args.trainset)
+	trainloader = DataLoader(train_data, batch_size=4, shuffle=True, collate_fn=AbSASADataset.collate_fn)
+
+	test_data = AbSASADataset(args.testset)
+	testloader = DataLoader(test_data, batch_size=4, shuffle=True, collate_fn=AbSASADataset.collate_fn)
+
+	model = DeepSASAResNet(21)
+	model_checkpoint = torch.load(args.model)[args.epoch]
+	model.load_state_dict(model_checkpoint)
+
+	evaluate(model, trainloader, "{}_train".format(args.jobname))
+	evaluate(model, testloader, "{}_test".format(args.jobname))
+
+if __name__ == '__main__':
+    main()
+
+
+
+
+
+
 

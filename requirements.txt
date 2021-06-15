@@ -2,6 +2,7 @@ numpy
 biopython
 freesasa
 torch
+scikit-learn
 pandas
 tqdm
 beautifulsoup4
