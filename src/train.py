@@ -8,6 +8,8 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 
+from losses.loss import loss_factory
+
 
 def train(path, log_path, train_loader, validation_loader, model, device, epochs, optimizer, criterion, lr_modifier):
 	""" trains the model and saves it in the models directory """
@@ -77,6 +79,7 @@ def _get_args():
 	parser.add_argument("--num_blocks", type=int, default=25, help="number of 1D resnet blocks to use")
 	parser.add_argument("--num_bins", type=int, default=26, help="number of bins to classify SASAs into")
 	parser.add_argument("--dropout", type=float, default=0.2, help="the probability of entire channels being zerod out")
+	parser.add_argument("--loss", type=str, default="focal_loss", help="the loss function to use")
 
 	# Training Hyperparameters
 	parser.add_argument("--data", type=str, help="NPZ file that contains the data for training")
@@ -104,7 +107,7 @@ def main():
 
 	optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 	# padded values are -1 in labels so do not calculate loss 
-	criterion = nn.CrossEntropyLoss(ignore_index=-1)
+	criterion = loss_factory(args.loss, device)
 
 	dataset = AbSASADataset(args.data, num_bins=args.num_bins)
 	train_split = int(len(dataset) * args.train_val_split)

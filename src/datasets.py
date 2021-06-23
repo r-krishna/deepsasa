@@ -20,7 +20,6 @@ class AbSASADataset(Dataset):
 		return len(self.files)
 
 	def __getitem__(self, idx):
-
 		data = np.load(self.out_file, allow_pickle=True)
 		sequence = data[self.files[idx]].item()['sequence']
 		sasa = data[self.files[idx]].item()['sasa']

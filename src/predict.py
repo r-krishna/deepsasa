@@ -19,7 +19,7 @@ def evaluate(model, loader, name):
 		for i, data in enumerate(loader):
 			names, inputs, labels = data
 			outputs = model(inputs)
-			output_logits.update({name:outputs[i, :, :] for i, name in enumerate(names)})
+			output_logits.update({name:np.array(outputs[i, :, :]) for i, name in enumerate(names)})
 			_, predicted = torch.max(outputs, 1)
 			total_predicted.append(torch.flatten(predicted))
 			total_labels.append(torch.flatten(labels))
@@ -29,7 +29,7 @@ def evaluate(model, loader, name):
 		conf_matrix = pd.DataFrame(data=confusion_matrix(y_true, y_predicted)) 
 		report.to_csv("{}_report.csv".format(name))
 		conf_matrix.to_csv("{}_confusion.csv".format(name))
-		torch.save(output_logits, "{}_output_logits.pth".format(name))
+		np.save("{}_output_logits.npy".format(name), output_logits,)
 
 
 def _get_args():
